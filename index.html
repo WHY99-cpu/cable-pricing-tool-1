@@ -1,0 +1,64 @@
+<!DOCTYPE html>
+<html>
+<head>
+    <title>Cable Pricing Tool</title>
+    <link rel="stylesheet" href="style.css">
+</head>
+<body>
+
+<h1>Cable Assembly Pricing</h1>
+
+<!-- Twist Filter -->
+<label>Cable Structure</label>
+<select id="twistType" onchange="updateCableOptions()">
+    <option value="twisted">Twisted</option>
+    <option value="untwisted">Untwisted</option>
+</select>
+
+<!-- Cable -->
+<label>Cable Type</label>
+<select id="cableType"></select>
+
+<!-- Length -->
+<label>Length (mm)</label>
+<input type="number" id="length" value="1000">
+
+<!-- Connector A -->
+<label>Connector A</label>
+<select id="connA">
+    <option value="FOL180">FOL180</option>
+    <option value="FPB90">FPB90</option>
+    <option value="FPB180">FPB180</option>
+    <option value="FOL90">FOL90</option>
+</select>
+
+<!-- Connector B -->
+<label>Connector B</label>
+<select id="connB">
+    <option value="FOL180">FOL180</option>
+    <option value="FPB90">FPB90</option>
+    <option value="FPB180">FPB180</option>
+    <option value="FOL90">FOL90</option>
+</select>
+
+<!-- Terminal -->
+<label>Terminal</label>
+<select id="terminal">
+    <option value="15448539">15448539</option>
+    <option value="15448540">15448540</option>
+    <option value="35039876">35039876</option>
+</select>
+
+<!-- Quantity -->
+<label>Quantity</label>
+<input type="number" id="qty" value="1">
+
+<br><br>
+<button onclick="calculate()">Calculate Price</button>
+
+<h2 id="result"></h2>
+
+<script src="script.js"></script>
+
+</body>
+</html>
