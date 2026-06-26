@@ -1,4 +1,54 @@
-// ===== UPDATE CABLE OPTIONS (FILTER) =====
+// =============================
+// GLOBAL PRICING DATA
+// =============================
+let pricingData = [];
+
+
+// =============================
+// LOAD CSV FILE
+// =============================
+function loadCSV() {
+
+    fetch("pricing.csv")
+        .then(response => response.text())
+        .then(data => {
+
+            let rows = data.split("\n");
+
+            rows.slice(1).forEach(row => {
+
+                let cols = row.split(",");
+
+                if (cols.length >= 4) {
+                    pricingData.push({
+                        type: cols[0].trim(),
+                        name: cols[1].trim(),
+                        category: cols[2].trim(),
+                        price: parseFloat(cols[3])
+                    });
+                }
+
+            });
+        });
+}
+
+
+// =============================
+// GET PRICE FROM CSV
+// =============================
+function getPrice(type, name) {
+
+    let item = pricingData.find(p =>
+        p.type === type && p.name === name
+    );
+
+    return item ? item.price : 0;
+}
+
+
+// =============================
+// UPDATE CABLE OPTIONS (FILTER)
+// =============================
 function updateCableOptions() {
 
     let twistType = document.getElementById("twistType").value;
@@ -6,35 +56,40 @@ function updateCableOptions() {
 
     cableSelect.innerHTML = "";
 
-    let cables = {
-        twisted: [
-            { name: "FLRY-A 2x0.35 M3130", value: "FLRY-A-2x035-M3130-T" },
-            { name: "FLRY-A 2x0.5 M3130", value: "FLRY-A-2x05-M3130-T" },
-            { name: "FLRY-A 2x0.75 M3130", value: "FLRY-A-2x075-M3130-T" },
-            { name: "FLRY-A 2x0.35 M3345", value: "FLRY-A-2x035-M3345-T" },
-            { name: "FLRY-A 2x0.5 M3345", value: "FLRY-A-2x05-M3345-T" },
-            { name: "FLRY-A 2x0.75 M3345", value: "FLRY-A-2x075-M3345-T" }
-        ],
-        untwisted: [
-            { name: "FLRY-A 2x0.35 M3130", value: "FLRY-A-2x035-M3130-U" },
-            { name: "FLRY-A 2x0.5 M3130", value: "FLRY-A-2x05-M3130-U" },
-            { name: "FLRY-A 2x0.75 M3130", value: "FLRY-A-2x075-M3130-U" },
-            { name: "FLRY-A 2x0.35 M3345", value: "FLRY-A-2x035-M3345-U" },
-            { name: "FLRY-A 2x0.5 M3345", value: "FLRY-A-2x05-M3345-U" },
-            { name: "FLRY-A 2x0.75 M3345", value: "FLRY-A-2x075-M3345-U" }
-        ]
-    };
+    let cables = pricingData.filter(p =>
+        p.type === "cable" && p.category === twistType
+    );
 
-    cables[twistType].forEach(c => {
+    cables.forEach(c => {
         let option = document.createElement("option");
-        option.value = c.value;
+        option.value = c.name;
         option.text = c.name;
         cableSelect.appendChild(option);
     });
+
 }
 
 
-// ===== CALCULATE PRICING =====
+// =============================
+// LENGTH ADDER LOGIC (FROM YOUR MATRIX)
+// =============================
+function getLengthAdder(length) {
+
+    let adder = 0;
+
+    if (length >= 5000) adder += 0.05505;
+    if (length >= 6000) adder += 0.01101;
+    if (length >= 7000) adder += 0.01101;
+    if (length >= 8000) adder += 0.09909;
+    if (length >= 9000) adder += 0.02202;
+
+    return adder;
+}
+
+
+// =============================
+// MAIN CALCULATION
+// =============================
 function calculate() {
 
     let cable = document.getElementById("cableType").value;
@@ -44,54 +99,19 @@ function calculate() {
     let terminal = document.getElementById("terminal").value;
     let qty = parseInt(document.getElementById("qty").value);
 
-    // ===== CABLE MATRIX ($/meter) =====
-    const cableMatrix = {
-        "FLRY-A-2x035-M3130-T": 0.17988,
-        "FLRY-A-2x05-M3130-T": 0.19488,
-        "FLRY-A-2x075-M3130-T": 0.21288,
-        "FLRY-A-2x035-M3345-T": 0.19988,
-        "FLRY-A-2x05-M3345-T": 0.21488,
-        "FLRY-A-2x075-M3345-T": 0.23288,
+    // ===== CABLE COST =====
+    let cableCost = getPrice("cable", cable) * (length / 1000);
 
-        "FLRY-A-2x035-M3130-U": 0.15988,
-        "FLRY-A-2x05-M3130-U": 0.17488,
-        "FLRY-A-2x075-M3130-U": 0.19288,
-        "FLRY-A-2x035-M3345-U": 0.17988,
-        "FLRY-A-2x05-M3345-U": 0.19488,
-        "FLRY-A-2x075-M3345-U": 0.21288
-    };
-
-    let cableCost = cableMatrix[cable] * (length / 1000);
-
-    // ===== CONNECTOR =====
-    const connectorMatrix = {
-        FOL180: 0.54367,
-        FPB90: 0.37988,
-        FPB180: 0.43988,
-        FOL90: 0.42256
-    };
-
+    // ===== CONNECTORS =====
     let connectorCost =
-        connectorMatrix[connA] +
-        connectorMatrix[connB];
+        getPrice("connector", connA) +
+        getPrice("connector", connB);
 
     // ===== TERMINAL =====
-    const terminalMatrix = {
-        "15448539": 0.11750,
-        "15448540": 0.11198,
-        "35039876": 0.08885
-    };
-
-    let terminalCost = terminalMatrix[terminal];
+    let terminalCost = getPrice("terminal", terminal);
 
     // ===== LENGTH ADDER =====
-    let lengthAdder = 0;
-
-    if (length >= 5000) lengthAdder += 0.05505;
-    if (length >= 6000) lengthAdder += 0.01101;
-    if (length >= 7000) lengthAdder += 0.01101;
-    if (length >= 8000) lengthAdder += 0.09909;
-    if (length >= 9000) lengthAdder += 0.02202;
+    let lengthAdder = getLengthAdder(length);
 
     // ===== TOTAL =====
     let unitPrice =
@@ -109,11 +129,19 @@ function calculate() {
         " | Connector: $" + connectorCost.toFixed(4) +
         " | Terminal: $" + terminalCost.toFixed(4) +
         " | Length Adder: $" + lengthAdder.toFixed(4) +
-        "\nTotal: $" + totalPrice.toFixed(2);
+        "\nQty: " + qty +
+        "\nTOTAL: $" + totalPrice.toFixed(2);
 }
 
 
-// ===== INITIAL LOAD =====
+// =============================
+// INITIAL LOAD
+// =============================
 window.onload = function () {
-    updateCableOptions();
+    loadCSV();
+
+    // Delay to ensure CSV loaded before filtering
+    setTimeout(() => {
+        updateCableOptions();
+    }, 300);
 };
